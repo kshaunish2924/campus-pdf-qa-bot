@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Campus PDF Q&A Bot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c27;
+      --border: #2a2a3a;
+      --accent: #7c6aff;
+      --accent2: #ff6a9b;
+      --accent-glow: rgba(124,106,255,0.25);
+      --text: #e8e8f0;
+      --text-muted: #888899;
+      --success: #4ade80;
+      --error: #ff5f7e;
+      --radius: 14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb1 { width: 500px; height: 500px; background: var(--accent); top: -150px; left: -100px; }
+    .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -80px; }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 56px;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .logo-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 300;
+      letter-spacing: 0.01em;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 20px;
+      transition: border-color 0.25s;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .card:hover { border-color: rgba(124,106,255,0.3); }
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.22s; }
+
+    .card-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+    }
+
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(124,106,255,0.05);
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon { font-size: 36px; margin-bottom: 12px; display: block; }
+
+    .upload-zone p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+    .upload-zone strong { color: var(--accent); font-weight: 500; }
+
+    .file-chosen {
+      margin-top: 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .file-chosen.show { display: flex; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      width: 100%;
+      margin-top: 14px;
+      box-shadow: 0 4px 20px rgba(124,106,255,0.3);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #9b8dff;
+      box-shadow: 0 6px 28px rgba(124,106,255,0.45);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-ask {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      padding: 13px 20px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 20px rgba(124,106,255,0.3);
+    }
+    .btn-ask:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(124,106,255,0.45);
+    }
+    .btn-ask:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .toast {
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.55;
+    }
+    .toast.show { display: flex; animation: fadeUp 0.3s ease both; }
+    .toast.success { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: var(--success); }
+    .toast.error   { background: rgba(255,95,126,0.1);  border: 1px solid rgba(255,95,126,0.3);  color: var(--error); }
+    .toast.info    { background: rgba(124,106,255,0.1); border: 1px solid rgba(124,106,255,0.3); color: var(--accent); }
+    .toast-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    .active-pdf {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid rgba(124,106,255,0.3);
+      border-radius: 10px;
+      padding: 11px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .active-pdf.show { display: flex; }
+
+    .active-pdf-dot {
+      width: 8px; height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+      flex-shrink: 0;
+      animation: pulse 2s infinite;
+    }
+
+    .active-pdf-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .active-pdf-id {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .qa-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    textarea {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 13px 16px;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      line-height: 1.5;
+      min-height: 52px;
+      max-height: 140px;
+    }
+    textarea::placeholder { color: var(--text-muted); }
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .answer-box { display: none; margin-top: 20px; }
+    .answer-box.show { display: block; animation: fadeUp 0.4s ease both; }
+
+    .answer-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .answer-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255,106,155,0.4), transparent);
+    }
+
+    .answer-content {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent2);
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .preview-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+      font-family: 'DM Mono', monospace;
+    }
+    .preview-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    .preview-text {
+      display: none;
+      margin-top: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 12px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .preview-text.show { display: block; }
+
+    .spinner {
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrapper">
+
+  <header>
+    <div class="logo-badge">Emerging Tools &amp; Technologies</div>
+    <h1>Campus PDF<br/>Q&amp;A Bot</h1>
+    <p class="subtitle">Upload campus documents · Ask anything · Get instant answers</p>
+  </header>
+
+  <!-- Upload Card -->
+  <div class="card">
+    <div class="card-label">01 &nbsp; Upload Document</div>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".pdf" />
+      <span class="upload-icon">📄</span>
+      <p><strong>Click to browse</strong> or drag &amp; drop your PDF here</p>
+      <p style="font-size:12px;margin-top:6px;">Lab manuals · Notes · Policies · Timetables</p>
+    </div>
+
+    <div class="file-chosen" id="fileChosen">
+      <span>📎</span>
+      <span id="fileChosenName"></span>
+    </div>
+
+    <button class="btn btn-primary" id="uploadBtn" disabled>
+      Upload &amp; Index PDF
+    </button>
+
+    <div class="toast" id="uploadToast">
+      <span class="toast-icon" id="uploadToastIcon"></span>
+      <span id="uploadToastMsg"></span>
+    </div>
+
+    <div id="previewSection" style="display:none;">
+      <button class="preview-toggle" id="previewToggle">▸ Show extracted text preview</button>
+      <div class="preview-text" id="previewText"></div>
+    </div>
+  </div>
+
+  <!-- Q&A Card -->
+  <div class="card">
+    <div class="card-label">02 &nbsp; Ask a Question</div>
+
+    <div class="active-pdf" id="activePdf">
+      <div class="active-pdf-dot"></div>
+      <span class="active-pdf-name" id="activePdfName">No document loaded</span>
+      <span class="active-pdf-id" id="activePdfId"></span>
+    </div>
+
+    <div class="qa-input-row">
+      <textarea
+        id="questionInput"
+        placeholder="e.g. What are the lab safety rules? / Summarize chapter 3 / What is the attendance policy?"
+        rows="2"
+        disabled
+      ></textarea>
+      <button class="btn btn-ask" id="askBtn" disabled>Ask</button>
+    </div>
+
+    <div class="toast" id="queryToast">
+      <span class="toast-icon" id="queryToastIcon"></span>
+      <span id="queryToastMsg"></span>
+    </div>
+
+    <div class="answer-box" id="answerBox">
+      <div class="answer-label">Answer</div>
+      <div class="answer-content" id="answerContent"></div>
+    </div>
+  </div>
+
+  <footer>campus-pdf-qa-bot &nbsp;·&nbsp; FastAPI + FAISS + SentenceTransformers</footer>
+</div>
+
+<script>
+  const API_BASE = 'http://127.0.0.1:8000';
+
+  let currentPdfId = null;
+  let currentFilename = null;
+
+  const $ = id => document.getElementById(id);
+
+  const fileInput      = $('fileInput');
+  const uploadZone     = $('uploadZone');
+  const fileChosen     = $('fileChosen');
+  const fileChosenName = $('fileChosenName');
+  const uploadBtn      = $('uploadBtn');
+  const uploadToast    = $('uploadToast');
+  const uploadToastMsg = $('uploadToastMsg');
+  const uploadToastIcon= $('uploadToastIcon');
+  const previewSection = $('previewSection');
+  const previewToggle  = $('previewToggle');
+  const previewText    = $('previewText');
+  const activePdf      = $('activePdf');
+  const activePdfName  = $('activePdfName');
+  const activePdfId    = $('activePdfId');
+  const questionInput  = $('questionInput');
+  const askBtn         = $('askBtn');
+  const queryToast     = $('queryToast');
+  const queryToastMsg  = $('queryToastMsg');
+  const queryToastIcon = $('queryToastIcon');
+  const answerBox      = $('answerBox');
+  const answerContent  = $('answerContent');
+
+  function showToast(el, msgEl, iconEl, type, msg) {
+    el.className = `toast show ${type}`;
+    msgEl.textContent = msg;
+    iconEl.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  }
+
+  function hideToast(el) { el.className = 'toast'; }
+
+  function setUploading(on) {
+    uploadBtn.disabled = on;
+    uploadBtn.innerHTML = on
+      ? '<div class="spinner"></div>&nbsp;Uploading &amp; Indexing…'
+      : 'Upload &amp; Index PDF';
+  }
+
+  function setAsking(on) {
+    askBtn.disabled = on;
+    askBtn.innerHTML = on ? '<div class="spinner"></div>' : 'Ask';
+  }
+
+  // File select
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files[0];
+    if (!f) return;
+    fileChosenName.textContent = f.name;
+    fileChosen.classList.add('show');
+    uploadBtn.disabled = false;
+    hideToast(uploadToast);
+  });
+
+  // Drag & drop
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.name.toLowerCase().endsWith('.pdf')) {
+      fileInput.files = e.dataTransfer.files;
+      fileChosenName.textContent = f.name;
+      fileChosen.classList.add('show');
+      uploadBtn.disabled = false;
+      hideToast(uploadToast);
+    } else {
+      showToast(uploadToast, uploadToastMsg, uploadToastIcon, 'error', 'Only PDF files are supported.');
+    }
+  });
+
+  // Preview toggle
+  previewToggle.addEventListener('click', () => {
+    const open = previewText.classList.toggle('show');
+    previewToggle.textContent = open ? '▾ Hide extracted text preview' : '▸ Show extracted text preview';
+  });
+
+  // Auto-resize textarea
+  questionInput.addEventListener('input', () => {
+    questionInput.style.height = 'auto';
+    questionInput.style.height = Math.min(questionInput.scrollHeight, 140) + 'px';
+  });
+
+  // Upload
+  uploadBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    hideToast(uploadToast);
+    previewSection.style.display = 'none';
+    previewText.classList.remove('show');
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    try {
+      const res  = await fetch(`${API_BASE}/pdf/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `Upload failed (${res.status})`);
+
+      currentPdfId = data.pdf_id;
+      currentFilename = file.name;
+
+      showToast(uploadToast, uploadToastMsg, uploadToastIcon, 'success',
+        `Indexed · ${data.chars_extracted.toLocaleString()} chars extracted · ID: ${data.pdf_id}`);
+
+      if (data.preview_500_chars) {
+        previewText.textContent = data.preview_500_chars;
+        previewSection.style.display = 'block';
+      }
+
+      activePdf.classList.add('show');
+      activePdfName.textContent = currentFilename;
+      activePdfId.textContent   = `id: ${currentPdfId.slice(0, 12)}…`;
+      questionInput.disabled    = false;
+      askBtn.disabled           = false;
+      answerBox.classList.remove('show');
+      hideToast(queryToast);
+
+    } catch (err) {
+      showToast(uploadToast, uploadToastMsg, uploadToastIcon, 'error', err.message);
+    } finally {
+      setUploading(false);
+    }
+  });
+
+  // Ask
+  async function askQuestion() {
+    const question = questionInput.value.trim();
+    if (!question || !currentPdfId) return;
+
+    setAsking(true);
+    hideToast(queryToast);
+    answerBox.classList.remove('show');
+
+    try {
+      const res  = await fetch(`${API_BASE}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, pdf_id: currentPdfId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `Query failed (${res.status})`);
+
+      answerContent.textContent = data.answer;
+      answerBox.classList.add('show');
+
+    } catch (err) {
+      showToast(queryToast, queryToastMsg, queryToastIcon, 'error', err.message);
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  askBtn.addEventListener('click', askQuestion);
+  questionInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!askBtn.disabled) askQuestion(); }
+  });
+</script>
+</body>
+</html>

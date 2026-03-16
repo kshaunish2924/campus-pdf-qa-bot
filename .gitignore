@@ -46,3 +46,6 @@ backend/app/data/texts/*
 !backend/app/data/metadata.json
 !backend/app/data/uploads/.gitkeep
 !backend/app/data/texts/.gitkeep
+
+backend/app/data/*.pkl
+backend/app/data/*.bin
